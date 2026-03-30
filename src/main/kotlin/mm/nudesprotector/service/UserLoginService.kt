@@ -20,6 +20,10 @@ class UserLoginService(
         return userRepository.findByEmailIgnoreCase(email)
             .switchIfEmpty(Mono.error(IllegalArgumentException("Invalid email or password")))
             .flatMap { user ->
+                if (!user.emailVerified) {
+                    return@flatMap Mono.error(IllegalArgumentException("Email is not verified"))
+                }
+
                 Mono.fromCallable { passwordEncoder.matches(rawPassword, user.passwordHash) }
                     .subscribeOn(Schedulers.boundedElastic())
                     .flatMap { passwordMatches ->
