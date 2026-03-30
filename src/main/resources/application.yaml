@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: Nudes Protector
+  r2dbc:
+    url: ${DB_URL:r2dbc:postgresql://localhost:5432/nudes_protector}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    url: ${LIQUIBASE_URL:jdbc:postgresql://localhost:5432/nudes_protector}
+    user: ${LIQUIBASE_USERNAME:${DB_USERNAME:postgres}}
+    password: ${LIQUIBASE_PASSWORD:${DB_PASSWORD:postgres}}
