@@ -1,3 +1,5 @@
 databaseChangeLog:
   - include:
       file: db/changelog/changes/db.changelog-001-create-users.yaml
+  - include:
+      file: db/changelog/changes/db.changelog-002-create-email-verification-codes.yaml

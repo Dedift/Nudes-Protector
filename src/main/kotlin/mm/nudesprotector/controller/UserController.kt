@@ -3,8 +3,10 @@ package mm.nudesprotector.controller
 import jakarta.validation.Valid
 import mm.nudesprotector.domain.dto.request.CreateUserRequest
 import mm.nudesprotector.domain.dto.request.LoginUserRequest
+import mm.nudesprotector.domain.dto.request.VerifyEmailRequest
 import mm.nudesprotector.domain.dto.response.CreateUserResponse
 import mm.nudesprotector.domain.dto.response.LoginUserResponse
+import mm.nudesprotector.domain.dto.response.VerifyEmailResponse
 import mm.nudesprotector.service.Service
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.PostMapping
@@ -28,4 +30,9 @@ class UserController(
     @ResponseStatus(HttpStatus.OK)
     fun loginUser(@Valid @RequestBody request: LoginUserRequest): Mono<LoginUserResponse> =
         service.loginUser(request)
+
+    @PostMapping("/verify-email")
+    @ResponseStatus(HttpStatus.OK)
+    fun verifyEmail(@Valid @RequestBody request: VerifyEmailRequest): Mono<VerifyEmailResponse> =
+        service.verifyEmail(request)
 }
