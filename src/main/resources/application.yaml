@@ -27,5 +27,5 @@ spring:
 app:
   mail:
     verification:
-      ttl: 15
+      ttl: PT15M
     from: ${APP_MAIL_FROM:noreply@nudesprotector.local}
