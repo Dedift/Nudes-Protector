@@ -2,8 +2,10 @@ package mm.nudesprotector.controller
 
 import jakarta.validation.Valid
 import mm.nudesprotector.domain.dto.request.CreateUserRequest
+import mm.nudesprotector.domain.dto.request.LoginUserRequest
 import mm.nudesprotector.domain.dto.response.CreateUserResponse
-import mm.nudesprotector.service.RegistrationService
+import mm.nudesprotector.domain.dto.response.LoginUserResponse
+import mm.nudesprotector.service.Service
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -15,10 +17,15 @@ import reactor.core.publisher.Mono
 @RestController
 @RequestMapping("/users")
 class UserController(
-    private val registrationService: RegistrationService,
+    private val service: Service,
 ) {
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     fun createUser(@Valid @RequestBody request: CreateUserRequest): Mono<CreateUserResponse> =
-        registrationService.createUser(request)
+        service.createUser(request)
+
+    @PostMapping("/login")
+    @ResponseStatus(HttpStatus.OK)
+    fun loginUser(@Valid @RequestBody request: LoginUserRequest): Mono<LoginUserResponse> =
+        service.loginUser(request)
 }

@@ -7,4 +7,5 @@ import java.util.UUID
 
 interface UserRepository : ReactiveCrudRepository<User, UUID> {
     fun existsByEmailIgnoreCase(email: String): Mono<Boolean>
+    fun findByEmailIgnoreCase(email: String): Mono<User>
 }
