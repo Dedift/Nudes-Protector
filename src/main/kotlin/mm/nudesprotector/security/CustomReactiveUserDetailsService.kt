@@ -12,15 +12,24 @@ import reactor.core.publisher.Mono
 @Service
 class CustomReactiveUserDetailsService(
     private val userRepository: UserRepository,
+    private val loginAttemptService: LoginAttemptService,
 ) : ReactiveUserDetailsService {
     override fun findByUsername(username: String): Mono<UserDetails> {
-        return userRepository.findByEmailIgnoreCase(username.trim().lowercase())
+        val normalizedEmail = username.trim()
+
+        return userRepository.findByEmailIgnoreCase(normalizedEmail)
             .switchIfEmpty(Mono.error(UsernameNotFoundException(username)))
-            .map { user -> User.builder()
-                .username(user.email)
-                .password(user.passwordHash)
-                .authorities(SimpleGrantedAuthority("ROLE_USER"))
-                .disabled(!user.emailVerified)
-                .build() }
+            .flatMap { user ->
+                loginAttemptService.isLocked(user.email)
+                    .map { locked ->
+                        User.builder()
+                            .username(user.email)
+                            .password(user.passwordHash)
+                            .authorities(SimpleGrantedAuthority("ROLE_USER"))
+                            .disabled(!user.emailVerified)
+                            .accountLocked(locked)
+                            .build()
+                    }
+            }
     }
 }

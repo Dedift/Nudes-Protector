@@ -7,6 +7,10 @@ spring:
     url: ${DB_URL:r2dbc:postgresql://localhost:5432/nudes_protector}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     url: ${LIQUIBASE_URL:jdbc:postgresql://localhost:5432/nudes_protector}
@@ -27,6 +31,10 @@ spring:
 app:
   frontend:
     base-url: ${APP_FRONTEND_BASE_URL:http://localhost:3000}
+  security:
+    login:
+      max-failed-attempts: 5
+      lock-duration: PT15M
   mail:
     verification:
       ttl: PT15M

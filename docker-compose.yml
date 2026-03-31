@@ -10,6 +10,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+  redis:
+    image: redis:7
+    container_name: nudes-protector-redis
+    ports:
+      - "6379:6379"
   mailhog:
     image: mailhog/mailhog:v1.0.1
     container_name: nudes-protector-mailhog
