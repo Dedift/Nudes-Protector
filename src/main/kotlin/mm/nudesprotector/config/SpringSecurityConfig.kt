@@ -48,6 +48,8 @@ class SpringSecurityConfig(
                     "/logout",
                     "/users/register",
                     "/users/verify-email",
+                    "/users/mfa/login",
+                    "/users/mfa/verify",
                     ).permitAll()
                 it.anyExchange().authenticated()
             }

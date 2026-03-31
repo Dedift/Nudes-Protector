@@ -12,14 +12,18 @@ import java.time.Instant
 class EmailVerificationService(
     private val userRepository: UserRepository,
     private val verificationCodeService: VerificationCodeService,
-    private val emailVerificationMailService: EmailVerificationMailService,
+    private val mailService: MailService,
 ) {
     fun issueCodeForUser(user: User): Mono<Void> {
         val userId = checkNotNull(user.id)
 
         return verificationCodeService.replaceCode(userId)
             .flatMap { code ->
-                emailVerificationMailService.sendVerificationCode(user.email, code)
+                mailService.sendTextMail(
+                    email = user.email,
+                    subject = "Email verification code",
+                    text = "Your email verification code is: $code",
+                )
             }
     }
 

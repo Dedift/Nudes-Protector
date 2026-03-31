@@ -31,6 +31,9 @@ spring:
 app:
   frontend:
     base-url: ${APP_FRONTEND_BASE_URL:http://localhost:3000}
+  mfa:
+    otp-ttl: PT5M
+    max-failed-attempts: 3
   security:
     login:
       max-failed-attempts: 5

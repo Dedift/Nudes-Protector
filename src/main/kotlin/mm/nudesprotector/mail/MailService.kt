@@ -8,18 +8,22 @@ import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 
 @Service
-class EmailVerificationMailService(
+class MailService(
     private val mailSender: JavaMailSender,
     @Value($$"${app.mail.from:noreply@nudesprotector.local}")
     private val fromAddress: String,
 ) {
-    fun sendVerificationCode(email: String, code: String): Mono<Void> =
+    fun sendTextMail(
+        email: String,
+        subject: String,
+        text: String,
+    ): Mono<Void> =
         Mono.fromCallable {
             val message = SimpleMailMessage()
             message.from = fromAddress
             message.setTo(email)
-            message.subject = "Email verification code"
-            message.text = "Your email verification code is: $code"
+            message.subject = subject
+            message.text = text
             mailSender.send(message)
         }
             .subscribeOn(Schedulers.boundedElastic())
