@@ -10,9 +10,9 @@ import java.time.Duration
 @Service
 class LoginAttemptService(
     private val redisTemplate: ReactiveStringRedisTemplate,
-    @Value("\${app.security.login.max-failed-attempts:5}")
+    @Value($$"${app.security.login.max-failed-attempts:5}")
     private val maxFailedAttempts: Long,
-    @Value("\${app.security.login.lock-duration:PT15M}")
+    @Value($$"${app.security.login.lock-duration:PT15M}")
     private val lockDuration: Duration,
 ) {
     fun registerFailure(email: String): Mono<LoginFailureOutcome> {
