@@ -5,7 +5,7 @@ import mm.nudesprotector.domain.dto.request.CreateUserRequest
 import mm.nudesprotector.domain.dto.request.VerifyEmailRequest
 import mm.nudesprotector.domain.dto.response.CreateUserResponse
 import mm.nudesprotector.domain.dto.response.VerifyEmailResponse
-import mm.nudesprotector.service.EmailVerificationService
+import mm.nudesprotector.mail.EmailVerificationService
 import mm.nudesprotector.service.UserRegistrationService
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.PostMapping

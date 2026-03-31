@@ -1,4 +1,4 @@
-package mm.nudesprotector.service
+package mm.nudesprotector.mail
 
 import mm.nudesprotector.domain.EmailVerificationCode
 import mm.nudesprotector.repository.EmailVerificationCodeRepository

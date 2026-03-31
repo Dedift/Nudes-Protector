@@ -1,4 +1,4 @@
-package mm.nudesprotector.service
+package mm.nudesprotector.mail
 
 import mm.nudesprotector.domain.User
 import mm.nudesprotector.domain.dto.request.VerifyEmailRequest

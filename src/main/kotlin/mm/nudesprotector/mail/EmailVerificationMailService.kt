@@ -1,4 +1,4 @@
-package mm.nudesprotector.service
+package mm.nudesprotector.mail
 
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.mail.SimpleMailMessage

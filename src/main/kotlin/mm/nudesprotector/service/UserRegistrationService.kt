@@ -3,6 +3,7 @@ package mm.nudesprotector.service
 import mm.nudesprotector.domain.User
 import mm.nudesprotector.domain.dto.request.CreateUserRequest
 import mm.nudesprotector.domain.dto.response.CreateUserResponse
+import mm.nudesprotector.mail.EmailVerificationService
 import mm.nudesprotector.repository.UserRepository
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
