@@ -1,16 +1,21 @@
 server:
   port: 8081
 spring:
+  threads:
+    virtual:
+      enabled: true
   application:
     name: Nudes Protector
-  r2dbc:
-    url: ${DB_URL:r2dbc:postgresql://localhost:5432/nudes_protector}
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/nudes_protector}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      repositories:
+        enabled: false
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     url: ${LIQUIBASE_URL:jdbc:postgresql://localhost:5432/nudes_protector}

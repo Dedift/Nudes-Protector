@@ -1,5 +1,7 @@
 package mm.nudesprotector.config
 
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import mm.nudesprotector.security.LoginAttemptService
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -9,28 +11,21 @@ import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.authentication.DisabledException
 import org.springframework.security.authentication.LockedException
 import org.springframework.security.config.Customizer
-import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity
-import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
-import org.springframework.security.authentication.ReactiveAuthenticationManager
-import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager
-import org.springframework.security.config.web.server.ServerHttpSecurity
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
+import org.springframework.security.config.annotation.web.builders.HttpSecurity
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
-import org.springframework.security.core.userdetails.ReactiveUserDetailsService
-import org.springframework.security.web.server.SecurityWebFilterChain
-import org.springframework.security.web.server.authentication.RedirectServerAuthenticationSuccessHandler
-import org.springframework.security.web.server.authentication.ServerAuthenticationSuccessHandler
-import org.springframework.security.web.server.authentication.ServerAuthenticationFailureHandler
-import org.springframework.security.web.server.authentication.logout.RedirectServerLogoutSuccessHandler
-import org.springframework.security.web.server.WebFilterExchange
-import org.springframework.web.server.ServerWebExchange
+import org.springframework.security.core.userdetails.UserDetailsService
+import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.authentication.AuthenticationFailureHandler
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler
+import org.springframework.security.web.authentication.logout.LogoutSuccessHandler
 import org.springframework.web.util.UriComponentsBuilder
-import reactor.core.publisher.Mono
-import java.net.URI
 
 @Configuration
-@EnableWebFluxSecurity
-@EnableReactiveMethodSecurity
+@EnableWebSecurity
+@EnableMethodSecurity
 class SpringSecurityConfig(
     @Value($$"${app.frontend.base-url:http://localhost:3000}")
     private val frontendBaseUrl: String,
@@ -38,24 +33,28 @@ class SpringSecurityConfig(
 ) {
 
     @Bean
-    fun springSecurityFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain =
+    fun securityFilterChain(
+        http: HttpSecurity,
+        userDetailsService: UserDetailsService,
+    ): SecurityFilterChain =
         http
+            .userDetailsService(userDetailsService)
             .cors(Customizer.withDefaults())
             .csrf { it.disable() }
-            .authorizeExchange {
-                it.pathMatchers(
+            .authorizeHttpRequests {
+                it.requestMatchers(
                     "/login",
                     "/logout",
                     "/users/register",
                     "/users/verify-email",
                     "/users/mfa/login",
                     "/users/mfa/verify",
-                    ).permitAll()
-                it.anyExchange().authenticated()
+                ).permitAll()
+                it.anyRequest().authenticated()
             }
             .formLogin {
-                it.authenticationSuccessHandler(authenticationSuccessHandler())
-                it.authenticationFailureHandler(authenticationFailureHandler())
+                it.successHandler(authenticationSuccessHandler())
+                it.failureHandler(authenticationFailureHandler())
             }
             .logout {
                 it.logoutSuccessHandler(logoutSuccessHandler())
@@ -66,56 +65,41 @@ class SpringSecurityConfig(
     fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder(12)
 
     @Bean
-    fun reactiveAuthenticationManager(
-        reactiveUserDetailsService: ReactiveUserDetailsService,
-        passwordEncoder: PasswordEncoder,
-    ): ReactiveAuthenticationManager =
-        UserDetailsRepositoryReactiveAuthenticationManager(reactiveUserDetailsService).apply {
-            setPasswordEncoder(passwordEncoder)
-        }
-
-    @Bean
-    fun authenticationSuccessHandler(): ServerAuthenticationSuccessHandler =
-        ServerAuthenticationSuccessHandler { webFilterExchange, authentication ->
+    fun authenticationSuccessHandler(): AuthenticationSuccessHandler =
+        AuthenticationSuccessHandler { _, response, authentication ->
             loginAttemptService.resetFailures(authentication.name)
-                .then(
-                    RedirectServerAuthenticationSuccessHandler(
-                        "${frontendBaseUrl.trimEnd('/')}/?screen=gallery",
-                    ).onAuthenticationSuccess(webFilterExchange, authentication),
-                )
+            response.sendRedirect("${frontendBaseUrl.trimEnd('/')}/?screen=gallery")
         }
 
     @Bean
-    fun authenticationFailureHandler(): ServerAuthenticationFailureHandler =
-        ServerAuthenticationFailureHandler { webFilterExchange, exception ->
+    fun authenticationFailureHandler(): AuthenticationFailureHandler =
+        AuthenticationFailureHandler { request, response, exception ->
             when (exception) {
-                is LockedException -> redirectWithError(webFilterExchange, "account_locked")
-                is DisabledException -> redirectWithError(webFilterExchange, "email_not_verified")
+                is LockedException -> redirectWithError(response, "account_locked")
+                is DisabledException -> redirectWithError(response, "email_not_verified")
                 is BadCredentialsException -> {
-                    submittedEmail(webFilterExchange.exchange)
-                        .flatMap { email -> loginAttemptService.registerFailure(email) }
-                        .flatMap { outcome ->
-                            if (outcome.locked) {
-                                redirectWithError(webFilterExchange, "account_locked")
-                            } else {
-                                redirectWithError(webFilterExchange, "bad_credentials")
-                            }
-                        }
+                    val submittedEmail = submittedEmail(request)
+                    val outcome = submittedEmail?.let(loginAttemptService::registerFailure)
+                    if (outcome?.locked == true) {
+                        redirectWithError(response, "account_locked")
+                    } else {
+                        redirectWithError(response, "bad_credentials")
+                    }
                 }
-                else -> redirectWithError(webFilterExchange, "bad_credentials")
+                else -> redirectWithError(response, "bad_credentials")
             }
         }
 
     @Bean
-    fun logoutSuccessHandler(): RedirectServerLogoutSuccessHandler =
-        RedirectServerLogoutSuccessHandler().apply {
-            setLogoutSuccessUrl(URI.create("${frontendBaseUrl.trimEnd('/')}/?screen=login&logout=true"))
+    fun logoutSuccessHandler(): LogoutSuccessHandler =
+        LogoutSuccessHandler { _, response, _ ->
+            response.sendRedirect("${frontendBaseUrl.trimEnd('/')}/?screen=login&logout=true")
         }
 
     private fun redirectWithError(
-        webFilterExchange: WebFilterExchange,
+        response: HttpServletResponse,
         error: String,
-    ): Mono<Void> {
+    ) {
         val target = UriComponentsBuilder
             .fromUriString("${frontendBaseUrl.trimEnd('/')}/")
             .queryParam("screen", "login")
@@ -123,12 +107,10 @@ class SpringSecurityConfig(
             .build(true)
             .toUri()
 
-        webFilterExchange.exchange.response.statusCode = HttpStatus.FOUND
-        webFilterExchange.exchange.response.headers.location = target
-        return webFilterExchange.exchange.response.setComplete()
+        response.status = HttpStatus.FOUND.value()
+        response.setHeader("Location", target.toString())
     }
 
-    private fun submittedEmail(exchange: ServerWebExchange): Mono<String> =
-        exchange.formData
-            .mapNotNull { it.getFirst("username")?.trim()?.lowercase() }
+    private fun submittedEmail(request: HttpServletRequest): String? =
+        request.getParameter("username")?.trim()?.lowercase()
 }
