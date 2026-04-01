@@ -9,11 +9,17 @@ import mm.nudesprotector.domain.dto.request.VerifyEmailRequest
 import mm.nudesprotector.domain.dto.response.CreateUserResponse
 import mm.nudesprotector.domain.dto.response.MfaChallengeResponse
 import mm.nudesprotector.domain.dto.response.MfaVerifyResponse
+import mm.nudesprotector.domain.dto.response.PasskeyResponse
 import mm.nudesprotector.domain.dto.response.VerifyEmailResponse
 import mm.nudesprotector.mail.EmailVerificationService
 import mm.nudesprotector.service.MfaAuthenticationService
+import mm.nudesprotector.service.PasskeyService
 import mm.nudesprotector.service.UserRegistrationService
 import org.springframework.http.HttpStatus
+import org.springframework.security.core.Authentication
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -26,6 +32,7 @@ class UserController(
     private val userRegistrationService: UserRegistrationService,
     private val emailVerificationService: EmailVerificationService,
     private val mfaAuthenticationService: MfaAuthenticationService,
+    private val passkeyService: PasskeyService,
 ) {
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
@@ -52,4 +59,18 @@ class UserController(
         servletRequest: HttpServletRequest,
     ): MfaVerifyResponse =
         mfaAuthenticationService.verifyChallenge(request, servletRequest)
+
+    @GetMapping("/me/passkeys")
+    @ResponseStatus(HttpStatus.OK)
+    fun listPasskeys(authentication: Authentication): List<PasskeyResponse> =
+        passkeyService.listPasskeys(authentication.name)
+
+    @DeleteMapping("/me/passkeys/{credentialId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun deletePasskey(
+        authentication: Authentication,
+        @PathVariable credentialId: String,
+    ) {
+        passkeyService.deletePasskey(authentication.name, credentialId)
+    }
 }

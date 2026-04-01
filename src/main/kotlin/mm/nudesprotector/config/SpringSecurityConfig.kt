@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpStatus
+import org.springframework.http.HttpMethod
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.authentication.DisabledException
 import org.springframework.security.authentication.LockedException
@@ -21,6 +22,11 @@ import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.AuthenticationFailureHandler
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler
+import org.springframework.security.web.webauthn.management.JdbcPublicKeyCredentialUserEntityRepository
+import org.springframework.security.web.webauthn.management.JdbcUserCredentialRepository
+import org.springframework.security.web.webauthn.management.PublicKeyCredentialUserEntityRepository
+import org.springframework.security.web.webauthn.management.UserCredentialRepository
+import org.springframework.jdbc.core.JdbcOperations
 import org.springframework.web.util.UriComponentsBuilder
 
 @Configuration
@@ -29,6 +35,12 @@ import org.springframework.web.util.UriComponentsBuilder
 class SpringSecurityConfig(
     @Value($$"${app.frontend.base-url:http://localhost:3000}")
     private val frontendBaseUrl: String,
+    @Value($$"${app.security.passkeys.rp-id:localhost}")
+    private val passkeyRpId: String,
+    @Value($$"${app.security.passkeys.rp-name:Nudes Protector}")
+    private val passkeyRpName: String,
+    @Value($$"${app.security.passkeys.allowed-origins:http://localhost:3000}")
+    private val allowedOrigins: String,
     private val loginAttemptService: LoginAttemptService,
 ) {
 
@@ -45,12 +57,21 @@ class SpringSecurityConfig(
                 it.requestMatchers(
                     "/login",
                     "/logout",
+                    "/login/webauthn",
                     "/users/register",
                     "/users/verify-email",
                     "/users/mfa/login",
                     "/users/mfa/verify",
+                    "/webauthn/authenticate/options",
                 ).permitAll()
+                it.requestMatchers(HttpMethod.DELETE, "/webauthn/register/**").denyAll()
                 it.anyRequest().authenticated()
+            }
+            .webAuthn {
+                it.rpId(passkeyRpId)
+                it.rpName(passkeyRpName)
+                it.allowedOrigins(allowedOrigins)
+                it.disableDefaultRegistrationPage(true)
             }
             .formLogin {
                 it.successHandler(authenticationSuccessHandler())
@@ -63,6 +84,14 @@ class SpringSecurityConfig(
 
     @Bean
     fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder(12)
+
+    @Bean
+    fun publicKeyCredentialUserEntityRepository(jdbcOperations: JdbcOperations): PublicKeyCredentialUserEntityRepository =
+        JdbcPublicKeyCredentialUserEntityRepository(jdbcOperations)
+
+    @Bean
+    fun userCredentialRepository(jdbcOperations: JdbcOperations): UserCredentialRepository =
+        JdbcUserCredentialRepository(jdbcOperations)
 
     @Bean
     fun authenticationSuccessHandler(): AuthenticationSuccessHandler =
